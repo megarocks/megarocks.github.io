@@ -1,15 +1,10 @@
-import { Component, ViewChild, ElementRef, AfterViewInit  } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements AfterViewInit {
-  @ViewChild('mainCanvas') mainCanvas: ElementRef;
-  public context: CanvasRenderingContext2D;
+export class AppComponent {
 
-  ngAfterViewInit(): void {
-    this.context = (<HTMLCanvasElement>this.mainCanvas.nativeElement).getContext('2d');
-  }
 }
