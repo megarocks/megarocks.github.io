@@ -25,242 +25,236 @@
   <canvas id="gameCanvas" width="480" height="320"></canvas>
 
   <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const game = {
-      rafId: null,
-      ball: {
-        x: 300,
-        y: 240,
-        radius: 10,
-        movementDelta: {
-          x: 5,
-          y: -5
+    class BricksGame {
+
+      constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.game = {
+          rafId: null,
+          ball: {
+            x: 300,
+            y: 240,
+            radius: 10,
+            movementDelta: {
+              x: 5,
+              y: -5
+            }
+          },
+          area: {
+            width: this.canvas.width,
+            height: this.canvas.height
+          },
+          player: {
+            width: 100,
+            height: 25,
+            x: (this.canvas.width - 100) / 2,
+            y: this.canvas.height - 25 - 2,
+            movementDelta: 5
+          },
+          brick: {
+            rows: 3,
+            cols: 5,
+            width: 84,
+            height: 25,
+            padding: 10,
+            offsetTop: 10,
+            offsetLeft: 10
+          },
+          bricks: [],
+          rightPressed: false,
+          leftPressed: false,
+          score: 0,
+          maxRoundPossibleScore: 0,
+          lives: 5,
+          maxRoundPossibleLives: 5
         }
-      },
-      area: {
-        width: canvas.width,
-        height: canvas.height
-      },
-      player: {
-        width: 100,
-        height: 25,
-        x: (canvas.width - 100) / 2,
-        y: canvas.height - 25 - 2,
-        movementDelta: 5
-      },
-      brick: {
-        rows: 3,
-        cols: 5,
-        width: 84,
-        height: 25,
-        padding: 10,
-        offsetTop: 10,
-        offsetLeft: 10
-      },
-      bricks: [],
-      rightPressed: false,
-      leftPressed: false,
-      score: 0,
-      maxRoundPossibleScore: 0,
-      lives: 5,
-      maxRoundPossibleLives: 5
-    }
+        this.initialState = JSON.parse(JSON.stringify(this.game));
 
-    const initialState = JSON.parse(JSON.stringify(game));
+        this.createInitialBrickState();
 
-    createInitialBrickState();
-
-    console.log(game);
-
-    document.addEventListener('keydown', keyDownListener);
-    document.addEventListener('keyup', keyUpListener);
-    document.addEventListener('mousemove', mouseMoveListener);
-
-    main();
-
-
-    function main() {
-      game.rafId = requestAnimationFrame(main);
-      updateGameState();
-      renderFrame();
-    }
-
-    function updateGameState() {
-      game.ball.x += game.ball.movementDelta.x;
-      game.ball.y += game.ball.movementDelta.y;
-
-      playerAndBordersCollisionDetection(game.ball.x, game.ball.y);
-      brickCollisionDetection(game.ball.x, game.ball.y);
-
-      if (game.leftPressed && game.player.x - game.player.movementDelta > 0) {
-        game.player.x -= game.player.movementDelta;
-      }
-      if (game.rightPressed && game.player.x + game.player.movementDelta < game.area.width - game.player.width) {
-        game.player.x += game.player.movementDelta;
+        document.addEventListener('keydown', this.keyDownListener.bind(this));
+        document.addEventListener('keyup', this.keyUpListener.bind(this));
+        document.addEventListener('mousemove', this.mouseMoveListener.bind(this));
       }
 
-      if (game.score >= game.maxRoundPossibleScore) {
-        cancelAnimationFrame(game.rafId);
-        alert(`Congratulations! You win with score: ${game.score}`);
-        document.location.reload();
-      }
-    }
+      createInitialBrickState() {
+        for (let c = 0; c < this.game.brick.cols; c++) {
+          this.game.bricks[c] = [];
+          for (let r = 0; r < this.game.brick.rows; r++) {
+            const brickScore = getRandomIntInclusive(1, 5);
+            this.game.bricks[c][r] = {
+              x: (c * (this.game.brick.width + this.game.brick.padding)) + this.game.brick.offsetLeft,
+              y: (r * (this.game.brick.height + this.game.brick.padding)) + this.game.brick.offsetTop,
+              status: brickScore,
+              colors: ['#b62020', '#cb2424', '#fe2e2e', '#fe5757', '#fe8181']
+            };
 
-    function renderFrame() {
-      ctx.clearRect(0, 0, game.area.width, game.area.height);
-      drawPlayer();
-      drawBricks()
-      drawBall();
-      drawScore();
-      drawLives();
-    }
-
-    function drawPlayer() {
-      ctx.beginPath();
-      ctx.rect(game.player.x, game.player.y, game.player.width, game.player.height);
-      ctx.fillStyle = `rgba(51,102,255, ${(game.lives+1)/game.maxRoundPossibleLives})`;
-      ctx.fill();
-      ctx.closePath();
-    }
-
-    function drawBall() {
-      ctx.beginPath();
-      ctx.arc(game.ball.x, game.ball.y, game.ball.radius, 0, Math.PI * 2, false);
-      ctx.fillStyle = '#b9e740';
-      ctx.fill();
-      ctx.closePath();
-    }
-
-    function drawBricks() {
-      for (let c = 0; c < game.brick.cols; c++) {
-        for (let r = 0; r < game.brick.rows; r++) {
-          const brick = game.bricks[c][r];
-
-          if (brick.status === 0) continue;
-
-          ctx.beginPath();
-          ctx.rect(brick.x, brick.y, game.brick.width, game.brick.height);
-          ctx.fillStyle = brick.colors[brick.status - 1];
-          ctx.fill();
-          ctx.closePath();
+            this.game.maxRoundPossibleScore += brickScore;
+          }
         }
       }
-    }
 
-    function drawScore() {
-      ctx.font = '16px Arial'
-      ctx.fillStyle = '#b5ff68';
-      ctx.fillText(`Score: ${game.score}`, 8, 20);
-    }
-
-    function drawLives() {
-      ctx.font = '16px Arial'
-      ctx.fillStyle = '#b5ff68';
-      ctx.fillText(`Lives: ${game.lives}`, 8, 40);
-    }
-
-    function playerAndBordersCollisionDetection(ballX, ballY) {
-      if (ballX > game.area.width - game.ball.radius || ballX < game.ball.radius) {
-        game.ball.movementDelta.x = -game.ball.movementDelta.x;
+      keyDownListener(event) {
+        const {
+          code
+        } = event;
+        if (code === 'ArrowLeft') {
+          this.game.leftPressed = true;
+        }
+        if (code === 'ArrowRight') {
+          this.game.rightPressed = true;
+        }
       }
-      if (ballY < game.ball.radius) {
-        game.ball.movementDelta.y = -game.ball.movementDelta.y;
-      } else if (ballY + game.ball.radius > game.player.y) {
 
+      keyUpListener(event) {
+        const {
+          code
+        } = event;
+        if (code === 'ArrowLeft') {
+          this.game.leftPressed = false;
+        }
+        if (code === 'ArrowRight') {
+          this.game.rightPressed = false;
+        }
+      }
 
-        if (ballX > game.player.x && ballX < game.player.x + game.player.width) {
-          console.log({
-            'ballY + game.ball.radius': ballY + game.ball.radius,
-            'game.player.y': game.player.y
-          })
-          game.ball.movementDelta.y = -game.ball.movementDelta.y;
-        } else if (ballY + game.ball.radius > game.area.height) {
-          if (game.lives <= 0) {
-            cancelAnimationFrame(game.rafId);
-            alert(`game over with score: ${game.score}`);
-            document.location.reload()
-          } else {
-            game.lives -= 1;
-            game.player.x = initialState.player.x;
-            game.player.y = initialState.player.y;
-            game.ball.x = initialState.ball.x;
-            game.ball.y = initialState.ball.y;
-            game.ball.movementDelta.x = initialState.ball.movementDelta.x;
-            game.ball.movementDelta.y = initialState.ball.movementDelta.y;
+      mouseMoveListener(event) {
+        const relativeX = event.clientX - this.canvas.offsetLeft;
+        if (relativeX > this.game.player.width / 2 && relativeX < this.canvas.width - this.game.player.width / 2) {
+          this.game.player.x = relativeX - this.game.player.width / 2;
+        }
+      }
+
+      main() {
+        this.game.rafId = requestAnimationFrame(this.main.bind(this));
+        this.updateGameState();
+        this.renderFrame();
+      }
+
+      updateGameState() {
+        this.game.ball.x += this.game.ball.movementDelta.x;
+        this.game.ball.y += this.game.ball.movementDelta.y;
+
+        this.playerAndBordersCollisionDetection(this.game.ball.x, this.game.ball.y);
+        this.brickCollisionDetection(this.game.ball.x, this.game.ball.y);
+
+        if (this.game.leftPressed && this.game.player.x - this.game.player.movementDelta > 0) {
+          this.game.player.x -= this.game.player.movementDelta;
+        }
+        if (this.game.rightPressed && this.game.player.x + this.game.player.movementDelta < this.game.area.width -
+          this.game.player.width) {
+          this.game.player.x += this.game.player.movementDelta;
+        }
+
+        if (this.game.score >= this.game.maxRoundPossibleScore) {
+          cancelAnimationFrame(this.game.rafId);
+          alert(`Congratulations! You win with score: ${this.game.score}`);
+          document.location.reload();
+        }
+      }
+
+      renderFrame() {
+        this.ctx.clearRect(0, 0, this.game.area.width, this.game.area.height);
+        this.drawPlayer();
+        this.drawBricks()
+        this.drawBall();
+        this.drawScore();
+        this.drawLives();
+      }
+
+      drawPlayer() {
+        this.ctx.beginPath();
+        this.ctx.rect(this.game.player.x, this.game.player.y, this.game.player.width, this.game.player.height);
+        this.ctx.fillStyle = `rgba(51,102,255, ${(this.game.lives+1)/this.game.maxRoundPossibleLives})`;
+        this.ctx.fill();
+        this.ctx.closePath();
+      }
+
+      drawBall() {
+        this.ctx.beginPath();
+        this.ctx.arc(this.game.ball.x, this.game.ball.y, this.game.ball.radius, 0, Math.PI * 2, false);
+        this.ctx.fillStyle = '#b9e740';
+        this.ctx.fill();
+        this.ctx.closePath();
+      }
+
+      drawBricks() {
+        for (let c = 0; c < this.game.brick.cols; c++) {
+          for (let r = 0; r < this.game.brick.rows; r++) {
+            const brick = this.game.bricks[c][r];
+
+            if (brick.status === 0) continue;
+
+            this.ctx.beginPath();
+            this.ctx.rect(brick.x, brick.y, this.game.brick.width, this.game.brick.height);
+            this.ctx.fillStyle = brick.colors[brick.status - 1];
+            this.ctx.fill();
+            this.ctx.closePath();
+          }
+        }
+      }
+
+      drawScore() {
+        this.ctx.font = '16px Arial'
+        this.ctx.fillStyle = '#b5ff68';
+        this.ctx.fillText(`Score: ${this.game.score}`, 8, 20);
+      }
+
+      drawLives() {
+        this.ctx.font = '16px Arial'
+        this.ctx.fillStyle = '#b5ff68';
+        this.ctx.fillText(`Lives: ${this.game.lives}`, 8, 40);
+      }
+
+      playerAndBordersCollisionDetection(ballX, ballY) {
+        if (ballX > this.game.area.width - this.game.ball.radius || ballX < this.game.ball.radius) {
+          this.game.ball.movementDelta.x = -this.game.ball.movementDelta.x;
+        }
+        if (ballY < this.game.ball.radius) {
+          this.game.ball.movementDelta.y = -this.game.ball.movementDelta.y;
+        } else if (ballY + this.game.ball.radius > this.game.player.y) {
+          if (ballX > this.game.player.x && ballX < this.game.player.x + this.game.player.width) {
+            this.game.ball.movementDelta.y = -this.game.ball.movementDelta.y;
+          } else if (ballY + this.game.ball.radius > this.game.area.height) {
+            if (this.game.lives <= 0) {
+              cancelAnimationFrame(this.game.rafId);
+              alert(`game over with score: ${this.game.score}`);
+              document.location.reload()
+            } else {
+              this.game.lives -= 1;
+              this.game.player.x = this.initialState.player.x;
+              this.game.player.y = this.initialState.player.y;
+              this.game.ball.x = this.initialState.ball.x;
+              this.game.ball.y = this.initialState.ball.y;
+              this.game.ball.movementDelta.x = this.initialState.ball.movementDelta.x;
+              this.game.ball.movementDelta.y = this.initialState.ball.movementDelta.y;
+            }
+          }
+        }
+      }
+
+      brickCollisionDetection(ballX, ballY) {
+        for (let c = 0; c < this.game.brick.cols; c++) {
+          for (let r = 0; r < this.game.brick.rows; r++) {
+            const brick = this.game.bricks[c][r];
+
+            if (brick.status === 0) continue;
+
+            if (ballX > brick.x && ballX < brick.x + this.game.brick.width && ballY < brick.y + this.game.brick.height &&
+              ballY > brick.y) {
+              game.score += 1;
+              if (brick.status > 0) brick.status -= 1;
+              this.game.ball.movementDelta.y = -this.game.ball.movementDelta.y;
+            }
           }
         }
       }
     }
 
-    function brickCollisionDetection(ballX, ballY) {
-      for (let c = 0; c < game.brick.cols; c++) {
-        for (let r = 0; r < game.brick.rows; r++) {
-          const brick = game.bricks[c][r];
+    const game = new BricksGame();
 
-          if (brick.status === 0) continue;
-
-          if (ballX > brick.x && ballX < brick.x + game.brick.width && ballY < brick.y + game.brick.height &&
-            ballY > brick.y) {
-            console.log({
-              brick
-            });
-
-            game.score += 1;
-            if (brick.status > 0) brick.status -= 1;
-            game.ball.movementDelta.y = -game.ball.movementDelta.y;
-          }
-        }
-      }
-    }
-
-    function keyDownListener(event) {
-      const {
-        code
-      } = event;
-      if (code === 'ArrowLeft') {
-        game.leftPressed = true;
-      }
-      if (code === 'ArrowRight') {
-        game.rightPressed = true;
-      }
-    }
-
-    function keyUpListener(event) {
-      const {
-        code
-      } = event;
-      if (code === 'ArrowLeft') {
-        game.leftPressed = false;
-      }
-      if (code === 'ArrowRight') {
-        game.rightPressed = false;
-      }
-    }
-
-    function mouseMoveListener(e) {
-      const relativeX = e.clientX - canvas.offsetLeft;
-      if (relativeX > game.player.width / 2 && relativeX < canvas.width - game.player.width / 2) {
-        game.player.x = relativeX - game.player.width / 2;
-      }
-    }
-
-    function createInitialBrickState() {
-      for (let c = 0; c < game.brick.cols; c++) {
-        game.bricks[c] = [];
-        for (let r = 0; r < game.brick.rows; r++) {
-          const brickScore = getRandomIntInclusive(1, 5);
-          game.bricks[c][r] = {
-            x: (c * (game.brick.width + game.brick.padding)) + game.brick.offsetLeft,
-            y: (r * (game.brick.height + game.brick.padding)) + game.brick.offsetTop,
-            status: brickScore,
-            colors: ['#b62020', '#cb2424', '#fe2e2e', '#fe5757', '#fe8181']
-          };
-
-          game.maxRoundPossibleScore += brickScore;
-        }
-      }
-    }
+    game.main();
 
     function getRandomIntInclusive(min, max) {
       min = Math.ceil(min);
