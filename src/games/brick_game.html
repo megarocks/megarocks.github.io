@@ -14,7 +14,6 @@
       background: #191919;
       display: block;
       margin: 0 auto;
-      cursor: none;
     }
 
   </style>
@@ -244,7 +243,7 @@
 
             if (ballX > brick.x && ballX < brick.x + this.game.brick.width && ballY < brick.y + this.game.brick.height &&
               ballY > brick.y) {
-              game.score += 1;
+              this.game.score += 1;
               if (brick.status > 0) brick.status -= 1;
               this.game.ball.movementDelta.y = -this.game.ball.movementDelta.y;
             }
