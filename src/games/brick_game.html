@@ -23,7 +23,8 @@
 <body>
 
   <canvas id="gameCanvas" width="480" height="320"></canvas>
-
+  <button onclick="game.start()">Start Game</button>
+  <button onclick="game.stop()">Stop Game</button>
   <script>
     class BricksGame {
 
@@ -250,11 +251,17 @@
           }
         }
       }
+
+      start() {
+        this.main();
+      }
+
+      stop() {
+        cancelAnimationFrame(this.game.rafId);
+      }
     }
 
     const game = new BricksGame();
-
-    game.main();
 
     function getRandomIntInclusive(min, max) {
       min = Math.ceil(min);
