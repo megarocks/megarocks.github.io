@@ -12,7 +12,6 @@ import { BrickGamePhaserComponent } from './brick-game-phaser/brick-game-phaser.
 const appRoutes: Routes = [
   { path: 'brick-game-pure-js', component: BrickGamePureJsComponent },
   { path: 'brick-game-phaser', component: BrickGamePhaserComponent },
-  // { path: '', component: AppComponent },
 ];
 
 @NgModule({
